@@ -53,9 +53,9 @@ var clusterLayer = svg.append("g");
 
 var voronoi;
 var voronoiLayer = svg.append("g");
-	
+
 var xScale, yScale;
-	
+
 // Visible elements
 var lines, circles, clusterCircles;
 
@@ -70,17 +70,19 @@ d3.csv("health.csv", function (error, data) {
 	points = countries.map(function (country) {
 		// Create shorter variable names
 		return {
-			x: Number(country["Doctors, per 10,000 population"]),
+			x: Math.log(Number(country["Doctors, per 10,000 population"])),
 		 	y: Number(country["Health spending, % of GDP"]),
 			label: country["Location"]
 		};
-	});
+	})
+	.filter(function(point) {
+		return ! isNaN(point.x) && ! isNaN(point.y)});
 
 	xScale = d3.scaleLinear()
 	.domain(d3.extent(points, function (point) {
 		return point.x;
 	})).range([padding, width - padding]);
-	
+
 	yScale = d3.scaleLinear()
 	.domain(d3.extent(points, function (point) {
 		return point.y;
@@ -129,8 +131,8 @@ d3.csv("health.csv", function (error, data) {
 	.attr("r", 5)
 	.style("fill", "orange")
 	.style("opacity", 0.5);
+
 	
-	/*
 	// This draws from https://bl.ocks.org/mbostock/4060366 -- Thanks Mike!
 	voronoi = d3.voronoi().extent([[0,0], [width,height]])
 	.x(function (d) { return xScale(d.x); })
@@ -142,22 +144,22 @@ d3.csv("health.csv", function (error, data) {
 	.enter().append("path")
 	.attr("class", "tile")
 	.attr("d", function (d) { return d ? "M" + d.join("L") + "Z" : null; });
-	*/
+
 });
 
 d3.select("#movemeans").on("click", function () {
 	centroids.forEach(function (centroid, i) {
-		var assignedPoints = 
+		var assignedPoints =
 			points.filter(function (point) { return point.cluster == i; });
-		
+
 		centroid.x = d3.mean(assignedPoints, function (point) { return point.x; });
 		centroid.y = d3.mean(assignedPoints, function (point) { return point.y; });
 	});
-	
+
 	centroidCircles.transition().duration(1000)
 	.attr("cx", function(d) { return xScale(d.x); })
-	.attr("cy", function(d) { return yScale(d.y); });	
-	
+	.attr("cy", function(d) { return yScale(d.y); });
+
 	lines.transition().duration(1000).attr("x2", function (point) {
 		return xScale(centroids[point.cluster].x);
 	})
@@ -174,12 +176,12 @@ d3.select("#findclosest").on("click", function () {
 		var shortestDistance = Number.MAX_VALUE;
 		for (var i = 0; i < centroids.length; i++) {
 			var c = centroids[i];
-			
-			var distance = Math.sqrt( 
+
+			var distance = Math.sqrt(
 				(c.x - point.x) * (c.x - point.x) +
 				(c.y - point.y) * (c.y - point.y)
 			);
-		
+
 			if (distance < shortestDistance) {
 				shortestDistance = distance;
 				nearest = i;
@@ -187,10 +189,10 @@ d3.select("#findclosest").on("click", function () {
 		}
 		point.cluster = nearest;
 		sum += shortestDistance;
-		
+
 	});
 	d3.select("#lengths").text(sum);
-	
+
 	lines.transition().duration(1000).attr("x2", function (point) {
 		return xScale(centroids[point.cluster].x);
 	})
